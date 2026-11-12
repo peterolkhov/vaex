@@ -1,0 +1,118 @@
+name: Vaex exact-source ddof native before 73
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/diagnose-vaex-ddof-native73]
+permissions:
+  contents: read
+jobs:
+  native-before:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PIP_NO_CACHE_DIR: '1'
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+      PIP_INDEX_URL: https://pypi.org/simple
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: vaexio/vaex
+          ref: 0780e9ca0ed1539f9754c3d186035c1372ff32f0
+          fetch-depth: 1
+          submodules: recursive
+          persist-credentials: false
+          path: source
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+          cache: ''
+      - name: Freeze diagnostic packet and authenticate complete source
+        shell: bash
+        run: |
+          set -euo pipefail
+          export VAEX73_OUTPUT="$RUNNER_TEMP/vaex73"
+          export VAEX73_SOURCE="$GITHUB_WORKSPACE/source"
+          mkdir -p "$VAEX73_OUTPUT/packet" "$VAEX73_OUTPUT/tmp" "$VAEX73_OUTPUT/wheels"
+          python - <<'PYASSETS'
+          import base64,hashlib,json,os,shutil,zlib
+          from pathlib import Path
+          root=Path(os.environ['VAEX73_OUTPUT'])
+          assert shutil.disk_usage(root).free >= 10*1024**3, 'Less than10GiB free on standard runner'
+          assets=json.loads(zlib.decompress(base64.b64decode('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')))
+          for name,text in assets.items():
+              path=root/'packet'/name
+              path.write_text(text)
+              path.chmod(0o444)
+          manifest=json.loads(assets['packet-manifest.json'])
+          for name,digest in manifest.items():
+              assert hashlib.sha256((root/'packet'/name).read_bytes()).hexdigest()==digest
+          with open(os.environ['GITHUB_ENV'],'a') as env:
+              env.write('VAEX73_OUTPUT='+str(root)+'\nVAEX73_SOURCE='+os.environ['VAEX73_SOURCE']+'\nTMPDIR='+str(root/'tmp')+'\n')
+          print('VAEX73_PACKET '+json.dumps(manifest),flush=True)
+          PYASSETS
+          python "$VAEX73_OUTPUT/packet/guard.py" before
+      - name: Install official native build requirements without project metadata changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpcre3-dev
+          g++ --version
+          python -m venv "$VAEX73_OUTPUT/venv"
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip install --no-cache-dir --progress-bar off --only-binary=:all: numpy==2.0.2 setuptools wheel scikit-build cmake ninja
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard.py" after-build-deps
+      - name: One bounded whole exact-source native core wheel build
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/bounded-build.py"
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard.py" after-build
+      - name: Install only the newly built local core wheel with official runtime requirements
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip install --no-cache-dir --progress-bar off numpy==2.0.2 "$VAEX73_OUTPUT"/wheels/vaex_core-*.whl
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip check
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip freeze > "$VAEX73_OUTPUT/runtime-freeze.txt"
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard.py" before-fixture
+      - name: Execute isolated fixture process and freeze raw report plus original exit
+        id: fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" -I "$VAEX73_OUTPUT/packet/run-and-freeze.py"
+          cat "$VAEX73_OUTPUT/fixture.log"
+          if [ -f "$VAEX73_OUTPUT/raw-report.json" ]; then
+            echo VAEX73_RAW_REPORT_BEGIN
+            cat "$VAEX73_OUTPUT/raw-report.json"
+            echo
+            echo VAEX73_RAW_REPORT_END
+          fi
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard.py" after-fixture
+      - name: Assess already frozen native observations independently
+        if: steps.fixture.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" -I "$VAEX73_OUTPUT/packet/assess.py"
+      - name: Final complete source and index guard
+        if: always()
+        shell: bash
+        run: python "$RUNNER_TEMP/vaex73/packet/guard.py" final
+      - name: Print bounded native build and frozen proof without uploads
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PYPROOF'
+          import hashlib,json,os,pathlib
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/'vaex73'
+          for name in ['native-build.log','build-exit.json','fixture-exit.json','frozen.json','runtime-freeze.txt']:
+              f=p/name
+              if f.is_file():
+                  b=f.read_bytes()
+                  print('VAEX73_PROOF_FILE '+json.dumps({'name':name,'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()}),flush=True)
+                  if len(b)<=11*1024*1024:
+                      print(b.decode(errors='replace'),flush=True)
+                  else:
+                      raise AssertionError('Proof exceeds bounded native log allowance')
+          PYPROOF
