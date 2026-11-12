@@ -1,0 +1,137 @@
+name: Vaex whole-source ddof candidate81
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/validate-vaex-ddof-after81]
+permissions:
+  contents: read
+jobs:
+  native-after:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    env:
+      PIP_NO_CACHE_DIR: '1'
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+      PIP_INDEX_URL: https://pypi.org/simple
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: vaexio/vaex
+          ref: 0780e9ca0ed1539f9754c3d186035c1372ff32f0
+          fetch-depth: 1
+          submodules: recursive
+          persist-credentials: false
+          path: source
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+          cache: ''
+      - name: Authenticate original whole source and apply sealed candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          export VAEX73_OUTPUT="$RUNNER_TEMP/vaex81"
+          export VAEX73_SOURCE="$GITHUB_WORKSPACE/source"
+          mkdir -p "$VAEX73_OUTPUT/packet" "$VAEX73_OUTPUT/tmp" "$VAEX73_OUTPUT/wheels"
+          python - <<'PYASSETS'
+          import base64,hashlib,json,os,shutil,zlib
+          from pathlib import Path
+          root=Path(os.environ['VAEX73_OUTPUT'])
+          assert shutil.disk_usage(root).free >= 10*1024**3
+          assets=json.loads(zlib.decompress(base64.b64decode('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')))
+          for name,data in assets.items():
+              (root/'packet'/name).write_text(data)
+          manifest=json.loads(assets['native-payload-manifest.json'])
+          for name,digest in manifest.items():
+              assert hashlib.sha256((root/'packet'/name).read_bytes()).hexdigest()==digest
+              (root/'packet'/name).chmod(0o444)
+          with open(os.environ['GITHUB_ENV'],'a') as env:
+              env.write('VAEX73_OUTPUT='+str(root)+'\nVAEX73_SOURCE='+os.environ['VAEX73_SOURCE']+'\nTMPDIR='+str(root/'tmp')+'\n')
+          print('VAEX81_PACKET '+json.dumps(manifest),flush=True)
+          PYASSETS
+          python "$VAEX73_OUTPUT/packet/guard81.py" prepare
+      - name: Install unchanged official native build requirements
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpcre3-dev
+          g++ --version
+          python -m venv "$VAEX73_OUTPUT/venv"
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip install --no-cache-dir --progress-bar off --only-binary=:all: numpy==2.0.2 setuptools wheel scikit-build cmake ninja
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard81.py" after-build-deps
+      - name: One bounded whole-source native core wheel build
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/bounded-build.py"
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard81.py" after-build
+      - name: Install only newly built core wheel and official runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip install --no-cache-dir --progress-bar off numpy==2.0.2 "$VAEX73_OUTPUT"/wheels/vaex_core-*.whl
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip check
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip freeze > "$VAEX73_OUTPUT/core-runtime-freeze.txt"
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard81.py" before-public
+      - name: Freeze original public assertions with explicit after-source binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" -I "$VAEX73_OUTPUT/packet/native-run81.py" public
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard81.py" after-public
+      - name: Install source sibling packages required by upstream test fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip install --no-cache-dir --progress-bar off numpy==2.0.2 pytest pytest-asyncio pytest-timeout scipy xarray requests diskcache psutil fsspec graphviz "$VAEX73_SOURCE/packages/vaex-server" "$VAEX73_SOURCE/packages/vaex-hdf5"
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip check
+          "$VAEX73_OUTPUT/venv/bin/python" -m pip freeze > "$VAEX73_OUTPUT/test-runtime-freeze.txt"
+          "$VAEX73_OUTPUT/venv/bin/python" -I "$VAEX73_OUTPUT/packet/runtime-guard81.py"
+      - name: Freeze all permanent ddof regression results
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" -I "$VAEX73_OUTPUT/packet/native-run81.py" regressions
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard81.py" after-regressions
+      - name: Freeze explicitly selected local aggregate and groupby suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" -I "$VAEX73_OUTPUT/packet/native-run81.py" upstream
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard81.py" after-upstream
+      - name: Freeze the same explicitly selected local suite with result cache enabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" -I "$VAEX73_OUTPUT/packet/native-run81.py" upstream-cache
+          "$VAEX73_OUTPUT/venv/bin/python" "$VAEX73_OUTPUT/packet/guard81.py" after-upstream-cache
+          "$VAEX73_OUTPUT/venv/bin/python" -I "$VAEX73_OUTPUT/packet/runtime-guard81.py"
+      - name: Print bounded raw build evidence and dependency resolutions
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PYRAW'
+          import os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'vaex81'
+          for name in ['build-exit.json','core-runtime-freeze.txt','test-runtime-freeze.txt']:
+              path=root/name
+              if path.is_file():
+                  assert path.stat().st_size <= 160*1024
+                  print('VAEX81_RAW_BUILD '+name+' '+path.read_text(),flush=True)
+          log=root/'native-build.log'
+          if log.is_file():
+              data=log.read_bytes()
+              print('VAEX81_RAW_BUILD_LOG bytes='+str(len(data))+' tail_bytes='+str(min(len(data),160*1024)),flush=True)
+              print(data[-160*1024:].decode(errors='replace'),flush=True)
+          PYRAW
+      - name: Assess already frozen native raw evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$VAEX73_OUTPUT/venv/bin/python" -I "$VAEX73_OUTPUT/packet/native-assess81.py"
+      - name: Final whole-source byte and pinned-vendor guard
+        if: always()
+        shell: bash
+        run: python "$RUNNER_TEMP/vaex81/packet/guard81.py" final
